@@ -6,6 +6,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	internal "github.com/nayan-bagale/skydock-agent/internal"
+	file "github.com/nayan-bagale/skydock-agent/internal/file"
 )
 
 type Event struct {
@@ -23,7 +24,7 @@ func HandleEvent(w *Watcher, event fsnotify.Event) *Event {
 
 	// Handle file/directory creation
 	if event.Has(fsnotify.Create) {
-		isDir, err := IsDirectory(event.Name)
+		isDir, err := file.IsDirectory(event.Name)
 		if err != nil {
 			if w.log != nil {
 				w.log.Error("failed to inspect path", "path", event.Name, "error", err)
@@ -34,6 +35,12 @@ func HandleEvent(w *Watcher, event fsnotify.Event) *Event {
 		if isDir {
 			if w.log != nil {
 				w.log.Info("add watcher dynamically to new directory", "path", event.Name)
+				err := w.fsWatcher.Add(event.Name)
+				if err != nil {
+					if w.log != nil {
+						w.log.Error("failed to add watcher to new directory", "path", event.Name, "error", err)
+					}
+				}
 			}
 		} else {
 			if w.log != nil {

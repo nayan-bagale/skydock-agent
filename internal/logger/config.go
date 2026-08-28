@@ -11,6 +11,6 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		Level:       slog.LevelInfo,
-		Development: false,
+		Development: true,
 	}
 }

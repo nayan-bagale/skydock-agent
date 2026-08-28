@@ -4,6 +4,7 @@ import (
 	"os"
 
 	internal "github.com/nayan-bagale/skydock-agent/internal"
+	"github.com/nayan-bagale/skydock-agent/internal/file"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
 	"github.com/nayan-bagale/skydock-agent/internal/watcher"
 )
@@ -28,6 +29,11 @@ func main() {
 		"version", version,
 		"pid", os.Getpid(),
 	)
+
+	// ------------------------------------
+	// Validate files
+	// ------------------------------------
+	validateFiles(log)
 
 	// ------------------------------------
 	// File watcher
@@ -75,6 +81,45 @@ func initLogger() *logger.Logger {
 	return log
 }
 
+func validateFiles(log *logger.Logger) bool {
+	files, err := file.GetAllFiles(internal.Directories)
+	if err != nil {
+		log.Error(
+			"failed to get files",
+			"error", err,
+		)
+		return false
+	}
+
+	for _, f := range files {
+		meta, err := file.GetFileMetadata(f)
+		if err != nil {
+			log.Error(
+				"failed to get file metadata",
+				"path", f,
+				"error", err,
+			)
+			return false
+		}
+
+		log.Info(
+			"file metadata",
+			"path", meta.Path,
+			"name", meta.Name,
+			"size", meta.Size,
+			"modified", meta.ModifiedAt,
+			"isDir", meta.IsDirectory,
+			"inode", meta.Inode,
+			"device", meta.Device,
+			"checksum", meta.Checksum,
+			"remoteID", meta.RemoteID,
+			"syncStatus", meta.SyncStatus,
+		)
+	}
+
+	return true
+}
+
 func initWatcher(log *logger.Logger) (*watcher.Watcher, error) {
 	watch, err := watcher.New(log)
 	if err != nil {
@@ -89,7 +134,7 @@ func initWatcher(log *logger.Logger) (*watcher.Watcher, error) {
 }
 
 func attachDirectoriesToWatcher(watch *watcher.Watcher, log *logger.Logger) bool {
-	dirs, err := watcher.GetAllDirs(internal.Directories)
+	dirs, err := file.GetAllDirs(internal.Directories)
 	if err != nil {
 		log.Error(
 			"failed to get directories",

@@ -1,4 +1,4 @@
-package watcher
+package file
 
 import (
 	"fmt"
@@ -28,6 +28,29 @@ func GetAllDirs(root []string) ([]string, error) {
 	}
 
 	return dirs, nil
+}
+
+func GetAllFiles(root []string) ([]string, error) {
+	var files []string
+
+	for _, r := range root {
+		err := filepath.WalkDir(r, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				fmt.Printf("Error accessing path %s: %v\n", r, err)
+				return nil
+			}
+			if !d.IsDir() {
+				files = append(files, path)
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return files, nil
 }
 
 func IsDirectory(path string) (bool, error) {
