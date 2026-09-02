@@ -3,10 +3,11 @@ package constants
 import "time"
 
 const (
-	DownloadsDirectory   = "/Users/nayanbagale/Downloads"
-	DocumentsDirectory   = "/Users/nayanbagale/Documents"
-	TemporaryFileSuffix  = "~"
-	DebounceInterval     = 500 * time.Microsecond
+	DownloadsDirectory = "/Users/nayanbagale/Developer/skydock-unified/Watching"
+	// DocumentsDirectory   = "/Users/nayanbagale/Documents"
+	TemporaryFileSuffix = "~"
+	DS_StoreFileName    = ".DS_Store"
+	DebounceInterval    = 500 * time.Microsecond
 )
 
-var Directories = []string{DownloadsDirectory, DocumentsDirectory}
+var Directories = []string{DownloadsDirectory}

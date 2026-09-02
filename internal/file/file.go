@@ -1,14 +1,18 @@
 package file
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"syscall"
+
+	internal "github.com/nayan-bagale/skydock-agent/internal"
 )
 
 func GetFileMetadata(filePath string) (*FileMeta, error) {
 	info, err := os.Stat(filePath)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("stat file: %w", err)
 	}
 
 	checksum, err := Checksum(filePath)
@@ -17,22 +21,32 @@ func GetFileMetadata(filePath string) (*FileMeta, error) {
 		return nil, err
 	}
 
-	stat := info.Sys().(*syscall.Stat_t)
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return nil, fmt.Errorf("unexpected file stat type for %s", filePath)
+	}
 
 	inode := stat.Ino
 	device := stat.Dev
 
 	return &FileMeta{
-		filePath,
-		info.Name(),
-		info.Size(),
-		info.ModTime(),
-		info.IsDir(),
-		inode,          // Inode (not available in this example)
-		uint64(device), // Device (not available in this example)
-		checksum,
-		"", // RemoteID (not available in this example)
-		"", // SyncStatus (not available in this example)
+		Path:        filePath,
+		Name:        info.Name(),
+		Size:        info.Size(),
+		ModifiedAt:  info.ModTime(),
+		IsDirectory: info.IsDir(),
+		Inode:       inode,
+		Device:      uint64(device),
+		Checksum:    checksum,
+		RemoteID:    "",
+		SyncStatus:  "",
 	}, nil
 
+}
+
+func IsValidFile(name string) bool {
+	if strings.HasPrefix(name, internal.DS_StoreFileName) {
+		return false
+	}
+	return true
 }

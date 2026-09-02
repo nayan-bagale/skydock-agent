@@ -6,6 +6,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
+	"github.com/nayan-bagale/skydock-agent/internal/repository"
 )
 
 var lastEvent = make(map[string]time.Time)
@@ -13,9 +14,10 @@ var lastEvent = make(map[string]time.Time)
 type Watcher struct {
 	fsWatcher *fsnotify.Watcher
 	log       *logger.Logger
+	files     *repository.FileRepository
 }
 
-func New(log *logger.Logger) (*Watcher, error) {
+func New(log *logger.Logger, files *repository.FileRepository) (*Watcher, error) {
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("create watcher: %w", err)
@@ -24,6 +26,7 @@ func New(log *logger.Logger) (*Watcher, error) {
 	return &Watcher{
 		fsWatcher: w,
 		log:       log,
+		files:     files,
 	}, nil
 }
 
