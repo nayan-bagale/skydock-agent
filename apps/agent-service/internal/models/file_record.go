@@ -15,9 +15,13 @@ type FileRecord struct {
 	Inode  uint64 `gorm:"index"`
 	Device uint64 `gorm:"index"`
 
-	Checksum   string `gorm:"index"`
-	RemoteID   string `gorm:"index"`
+	Checksum string `gorm:"index"`
+	RemoteID string `gorm:"index"`
+
+	// SYNCED, CREATED, MODIFIED, MOVED, DELETED, etc.
 	SyncStatus string `gorm:"index"`
+	// When the file was last observed during reconciliation.
+	LastSeenAt time.Time `gorm:"index"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

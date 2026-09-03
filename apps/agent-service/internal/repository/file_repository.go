@@ -37,6 +37,7 @@ func (r *FileRepository) Upsert(meta *file.FileMeta) error {
 		Checksum:    meta.Checksum,
 		RemoteID:    meta.RemoteID,
 		SyncStatus:  meta.SyncStatus,
+		LastSeenAt:  meta.LastSeenAt,
 	}
 
 	if err := r.db.Clauses(clause.OnConflict{
@@ -63,4 +64,24 @@ func (r *FileRepository) Delete(path string) error {
 	}
 
 	return nil
+}
+
+func (r *FileRepository) GetByPath(path string) (*models.FileRecord, error) {
+	if r == nil || r.db == nil {
+		return nil, fmt.Errorf("file repository is not initialized")
+	}
+
+	if path == "" {
+		return nil, fmt.Errorf("path is required")
+	}
+
+	var record models.FileRecord
+	if err := r.db.Where("path = ?", path).First(&record).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get file record by path: %w", err)
+	}
+
+	return &record, nil
 }

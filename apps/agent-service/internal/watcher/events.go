@@ -47,9 +47,7 @@ func HandleEvent(w *Watcher, event fsnotify.Event) {
 	}
 
 	if event.Has(fsnotify.Rename) {
-		if w.log != nil {
-			w.log.Info("renamed file", "path", event.Name)
-		}
+		HandleRename(w, event)
 	}
 
 	if event.Has(fsnotify.Remove) {

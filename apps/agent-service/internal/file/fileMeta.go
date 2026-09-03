@@ -1,6 +1,8 @@
 package file
 
-import "time"
+import (
+	"time"
+)
 
 type FileMeta struct {
 	Path        string
@@ -19,4 +21,6 @@ type FileMeta struct {
 	// Sync
 	RemoteID   string
 	SyncStatus string
+
+	LastSeenAt time.Time
 }

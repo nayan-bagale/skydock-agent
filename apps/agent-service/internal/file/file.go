@@ -45,7 +45,7 @@ func GetFileMetadata(filePath string) (*FileMeta, error) {
 }
 
 func IsValidFile(name string) bool {
-	if strings.HasPrefix(name, internal.DS_StoreFileName) {
+	if strings.HasSuffix(name, internal.DS_StoreFileName) {
 		return false
 	}
 	return true
