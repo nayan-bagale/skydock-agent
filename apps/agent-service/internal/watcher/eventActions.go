@@ -38,11 +38,11 @@ func HandleWrite(w *Watcher, event fsnotify.Event) {
 	}
 
 	meta, err := file.GetFileMetadata(event.Name)
-	meta.SyncStatus = syncStatus.SyncStatusModified
 	if err != nil {
 		w.log.Error("failed to load modified file metadata", "path", event.Name, "error", err)
 		return
 	}
+	meta.SyncStatus = syncStatus.SyncStatusModified
 
 	if err := w.files.Upsert(meta); err != nil && w.log != nil {
 		w.log.Error("failed to persist modified file", "path", event.Name, "error", err)
@@ -59,6 +59,9 @@ func HandleRename(w *Watcher, event fsnotify.Event) {
 	record, err := w.files.GetByPath(event.Name)
 	if err != nil {
 		w.log.Error("failed to load renamed file metadata", "path", event.Name, "error", err)
+		return
+	}
+	if record == nil {
 		return
 	}
 

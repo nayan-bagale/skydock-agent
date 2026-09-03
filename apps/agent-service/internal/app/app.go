@@ -1,13 +1,17 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	constants "github.com/nayan-bagale/skydock-agent/internal"
 	"github.com/nayan-bagale/skydock-agent/internal/database"
 	filepkg "github.com/nayan-bagale/skydock-agent/internal/file"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
+	"github.com/nayan-bagale/skydock-agent/internal/reconciler"
 	"github.com/nayan-bagale/skydock-agent/internal/repository"
 	"github.com/nayan-bagale/skydock-agent/internal/watcher"
 )
@@ -16,6 +20,8 @@ const version = "1.0.0"
 
 func Run() error {
 	log := initLogger()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	defer func() {
 		if err := log.Close(); err != nil {
@@ -54,7 +60,10 @@ func Run() error {
 
 	fileRepo := repository.NewFileRepository(db)
 
-	validateFiles(log, fileRepo)
+	reconcilerService := reconciler.New(constants.Directories, fileRepo, log)
+	if err := reconcilerService.Reconcile(); err != nil {
+		return fmt.Errorf("initial filesystem reconciliation: %w", err)
+	}
 
 	watch, err := initWatcher(log, fileRepo)
 	if err != nil {
@@ -72,10 +81,12 @@ func Run() error {
 	}
 
 	go watch.StartWatcher()
+	go reconcilerService.Run(ctx, reconciler.DefaultInterval)
 
 	log.Info("SkyDock agent started")
 
-	select {}
+	<-ctx.Done()
+	return nil
 }
 
 func initLogger() *logger.Logger {
@@ -93,49 +104,6 @@ func initLogger() *logger.Logger {
 	}
 
 	return log
-}
-
-func validateFiles(log *logger.Logger, fileRepo *repository.FileRepository) {
-	rawFiles, err := filepkg.GetAllFiles(constants.Directories)
-
-	var files []string
-
-	for _, f := range rawFiles {
-		if filepkg.IsValidFile(f) {
-			files = append(files, f)
-		}
-	}
-
-	if err != nil {
-		log.Error("failed to get files", "error", err)
-		return
-	}
-
-	for _, f := range files {
-		meta, err := filepkg.GetFileMetadata(f)
-		if err != nil {
-			log.Error("failed to get file metadata", "path", f, "error", err)
-			continue
-		}
-
-		if err := fileRepo.Upsert(meta); err != nil {
-			log.Error("failed to persist file metadata", "path", meta.Path, "error", err)
-		}
-
-		log.Info(
-			"file metadata",
-			"path", meta.Path,
-			"name", meta.Name,
-			"size", meta.Size,
-			"modified", meta.ModifiedAt,
-			"isDir", meta.IsDirectory,
-			"inode", meta.Inode,
-			"device", meta.Device,
-			"checksum", meta.Checksum,
-			"remoteID", meta.RemoteID,
-			"syncStatus", meta.SyncStatus,
-		)
-	}
 }
 
 func initWatcher(log *logger.Logger, fileRepo *repository.FileRepository) (*watcher.Watcher, error) {

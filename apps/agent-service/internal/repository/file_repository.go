@@ -85,3 +85,35 @@ func (r *FileRepository) GetByPath(path string) (*models.FileRecord, error) {
 
 	return &record, nil
 }
+
+func (r *FileRepository) ListAll() ([]models.FileRecord, error) {
+	if r == nil || r.db == nil {
+		return nil, fmt.Errorf("file repository is not initialized")
+	}
+
+	var records []models.FileRecord
+	if err := r.db.Order("path ASC").Find(&records).Error; err != nil {
+		return nil, fmt.Errorf("list file records: %w", err)
+	}
+
+	return records, nil
+}
+
+func (r *FileRepository) MarkMissing(path string) error {
+	if r == nil || r.db == nil {
+		return fmt.Errorf("file repository is not initialized")
+	}
+
+	if path == "" {
+		return fmt.Errorf("path is required")
+	}
+
+	updates := map[string]interface{}{
+		"sync_status": models.SyncStatusMissing,
+	}
+	if err := r.db.Model(&models.FileRecord{}).Where("path = ?", path).Updates(updates).Error; err != nil {
+		return fmt.Errorf("mark file record missing: %w", err)
+	}
+
+	return nil
+}
