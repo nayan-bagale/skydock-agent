@@ -22,6 +22,9 @@ type logger interface {
 	Error(msg string, args ...any)
 }
 
+// New creates a reconciler for the configured sync roots.
+// The logger is intentionally an interface so the reconciliation logic stays
+// independent from the concrete logging implementation and remains easy to test.
 func New(roots []string, files *repository.FileRepository, log logger) *Reconciler {
 	return &Reconciler{
 		roots: append([]string(nil), roots...),
@@ -30,6 +33,9 @@ func New(roots []string, files *repository.FileRepository, log logger) *Reconcil
 	}
 }
 
+// Reconcile makes the database reflect the current filesystem state.
+// A failed or incomplete scan stops the operation before missing records are
+// marked, preventing temporary filesystem errors from causing false deletions.
 func (r *Reconciler) Reconcile() error {
 	if r == nil || r.files == nil {
 		return fmt.Errorf("reconciler is not initialized")
@@ -46,6 +52,8 @@ func (r *Reconciler) Reconcile() error {
 	}
 
 	for _, record := range records {
+		// Only reconcile records owned by this service. This protects records
+		// that may belong to another sync root or future feature.
 		if !isWithinRoots(record.Path, r.roots) {
 			continue
 		}
@@ -72,6 +80,8 @@ func (r *Reconciler) scan() (map[string]struct{}, error) {
 	now := time.Now()
 
 	for _, root := range r.roots {
+		// WalkDir does not follow symbolic links, which prevents a symlink from
+		// making reconciliation unexpectedly scan outside the configured root.
 		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr

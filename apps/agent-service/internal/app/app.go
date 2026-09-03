@@ -20,6 +20,7 @@ const version = "1.0.0"
 
 func Run() error {
 	log := initLogger()
+	// Use one context for all long-running services so shutdown can be coordinated.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -60,6 +61,8 @@ func Run() error {
 
 	fileRepo := repository.NewFileRepository(db)
 
+	// Reconcile before starting the watcher so the database has a complete
+	// baseline and events are only responsible for changes after startup.
 	reconcilerService := reconciler.New(constants.Directories, fileRepo, log)
 	if err := reconcilerService.Reconcile(); err != nil {
 		return fmt.Errorf("initial filesystem reconciliation: %w", err)

@@ -86,6 +86,8 @@ func (r *FileRepository) GetByPath(path string) (*models.FileRecord, error) {
 	return &record, nil
 }
 
+// ListAll returns all records so the reconciler can identify paths that no
+// longer exist in the filesystem.
 func (r *FileRepository) ListAll() ([]models.FileRecord, error) {
 	if r == nil || r.db == nil {
 		return nil, fmt.Errorf("file repository is not initialized")
@@ -99,6 +101,8 @@ func (r *FileRepository) ListAll() ([]models.FileRecord, error) {
 	return records, nil
 }
 
+// MarkMissing keeps the record for sync/history purposes while recording that
+// the corresponding local path was not observed during reconciliation.
 func (r *FileRepository) MarkMissing(path string) error {
 	if r == nil || r.db == nil {
 		return fmt.Errorf("file repository is not initialized")
