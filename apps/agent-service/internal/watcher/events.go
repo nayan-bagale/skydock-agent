@@ -10,11 +10,15 @@ import (
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
 )
 
+var lastEvent = make(map[string]time.Time)
+
 type Event struct {
 	Path string
 	Op   fsnotify.Op
 }
 
+// HandleEvent dispatches a filesystem event after ignoring chmod, temps, and
+// path-level debounce. Directory creates only attach a new watch.
 func HandleEvent(w *Watcher, event fsnotify.Event) {
 
 	isIgnored := isIgnoredEvent(event, w.log)
@@ -56,6 +60,8 @@ func HandleEvent(w *Watcher, event fsnotify.Event) {
 
 }
 
+// isIgnoredEvent returns true for chmod, editor temp files, .DS_Store, and
+// duplicate events on the same path within DebounceInterval.
 func isIgnoredEvent(event fsnotify.Event, log *logger.Logger) bool {
 	// Ignore permission change events
 	if event.Has(fsnotify.Chmod) {
@@ -87,6 +93,8 @@ func isIgnoredEvent(event fsnotify.Event, log *logger.Logger) bool {
 	return false
 }
 
+// attachWatcherToNewDirectory starts watching a newly created directory and
+// returns true when the event was a directory (so it is not stored as a file).
 func attachWatcherToNewDirectory(w *Watcher, event fsnotify.Event) bool {
 	isDir, err := file.IsDirectory(event.Name)
 	if err != nil {

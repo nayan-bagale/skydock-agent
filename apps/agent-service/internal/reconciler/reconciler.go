@@ -7,9 +7,13 @@ import (
 	"time"
 
 	filepkg "github.com/nayan-bagale/skydock-agent/internal/file"
-	"github.com/nayan-bagale/skydock-agent/internal/models"
 	"github.com/nayan-bagale/skydock-agent/internal/repository"
 )
+
+type inodeKey struct {
+	device uint64
+	inode  uint64
+}
 
 type Reconciler struct {
 	roots []string
@@ -34,14 +38,14 @@ func New(roots []string, files *repository.FileRepository, log logger) *Reconcil
 }
 
 // Reconcile makes the database reflect the current filesystem state.
-// A failed or incomplete scan stops the operation before missing records are
-// marked, preventing temporary filesystem errors from causing false deletions.
+// A failed or incomplete scan stops the operation before vanished records are
+// deleted, preventing temporary filesystem errors from causing false deletions.
 func (r *Reconciler) Reconcile() error {
 	if r == nil || r.files == nil {
 		return fmt.Errorf("reconciler is not initialized")
 	}
 
-	observed, err := r.scan()
+	observed, observedInodes, err := r.scan()
 	if err != nil {
 		return err
 	}
@@ -52,8 +56,6 @@ func (r *Reconciler) Reconcile() error {
 	}
 
 	for _, record := range records {
-		// Only reconcile records owned by this service. This protects records
-		// that may belong to another sync root or future feature.
 		if !isWithinRoots(record.Path, r.roots) {
 			continue
 		}
@@ -61,11 +63,30 @@ func (r *Reconciler) Reconcile() error {
 			continue
 		}
 
-		if err := r.files.MarkMissing(record.Path); err != nil {
+		if record.Inode != 0 {
+			if newPath, ok := observedInodes[inodeKey{device: record.Device, inode: record.Inode}]; ok {
+				dest, err := r.files.GetByPath(newPath)
+				if err != nil {
+					return err
+				}
+				if dest != nil {
+					meta := repository.MetaFromRecord(dest)
+					if err := r.files.Relocate(record.Path, meta); err != nil {
+						return err
+					}
+				}
+				if r.log != nil {
+					r.log.Info("reconciliation relocated missing path", "from", record.Path, "to", newPath)
+				}
+				continue
+			}
+		}
+
+		if err := r.files.Delete(record.Path); err != nil {
 			return err
 		}
 		if r.log != nil {
-			r.log.Info("reconciliation marked file missing", "path", record.Path)
+			r.log.Info("reconciliation deleted missing file", "path", record.Path)
 		}
 	}
 
@@ -75,9 +96,13 @@ func (r *Reconciler) Reconcile() error {
 	return nil
 }
 
-func (r *Reconciler) scan() (map[string]struct{}, error) {
+// scan walks every sync root, then ApplyObserved for each file. On walk
+// failure it returns before callers delete vanished rows.
+func (r *Reconciler) scan() (map[string]struct{}, map[inodeKey]string, error) {
 	observed := make(map[string]struct{})
+	observedInodes := make(map[inodeKey]string)
 	now := time.Now()
+	var metas []*filepkg.FileMeta
 
 	for _, root := range r.roots {
 		// WalkDir does not follow symbolic links, which prevents a symlink from
@@ -95,34 +120,28 @@ func (r *Reconciler) scan() (map[string]struct{}, error) {
 				return fmt.Errorf("read metadata for %s: %w", path, err)
 			}
 			meta.LastSeenAt = now
-
-			record, err := r.files.GetByPath(path)
-			if err != nil {
-				return err
-			}
-			if record == nil {
-				meta.SyncStatus = models.SyncStatusSynced
-			} else {
-				// Reconciliation refreshes local metadata without overwriting
-				// remote identity or a pending sync state.
-				meta.RemoteID = record.RemoteID
-				meta.SyncStatus = record.SyncStatus
-			}
-
-			if err := r.files.Upsert(meta); err != nil {
-				return err
-			}
+			metas = append(metas, meta)
 			observed[path] = struct{}{}
+			if meta.Inode != 0 {
+				observedInodes[inodeKey{device: meta.Device, inode: meta.Inode}] = path
+			}
 			return nil
 		})
 		if err != nil {
-			return nil, fmt.Errorf("scan sync root %s: %w", root, err)
+			return nil, nil, fmt.Errorf("scan sync root %s: %w", root, err)
 		}
 	}
 
-	return observed, nil
+	for _, meta := range metas {
+		if err := r.files.ApplyObserved(meta); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return observed, observedInodes, nil
 }
 
+// isWithinRoots reports whether path is a descendant of one of the sync roots.
 func isWithinRoots(path string, roots []string) bool {
 	path = filepath.Clean(path)
 	for _, root := range roots {
@@ -135,6 +154,7 @@ func isWithinRoots(path string, roots []string) bool {
 	return false
 }
 
+// isParentPath reports whether rel from filepath.Rel escaped above the root.
 func isParentPath(path string) bool {
 	separator := string(filepath.Separator)
 	return len(path) > 2 && path[:3] == ".."+separator
