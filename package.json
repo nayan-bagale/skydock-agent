@@ -1,9 +1,16 @@
 {
   "name": "skydock-agent",
   "packageManager": "yarn@4.14.1",
+  "engines": {
+    "node": ">=20.0.0 <24.0.0"
+  },
   "private": true,
-  "workspaces": ["apps/desktop", "packages/*"],
+  "workspaces": [
+    "apps/desktop",
+    "packages/*"
+  ],
   "scripts": {
+    "postinstall": "node scripts/verify-electron.mjs",
     "desktop:dev": "yarn workspace desktop electron:dev",
     "desktop:build": "yarn workspace desktop build",
     "desktop:lint": "yarn workspace desktop lint",
