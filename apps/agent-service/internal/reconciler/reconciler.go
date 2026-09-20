@@ -30,12 +30,21 @@ type logger interface {
 // The logger is intentionally an interface so the reconciliation logic stays
 // independent from the concrete logging implementation and remains easy to test.
 func New(roots []string, files *repository.FileRepository, log logger) *Reconciler {
+	if log == nil {
+		log = discardLogger{}
+	}
+
 	return &Reconciler{
 		roots: append([]string(nil), roots...),
 		files: files,
 		log:   log,
 	}
 }
+
+type discardLogger struct{}
+
+func (discardLogger) Info(string, ...any)  {}
+func (discardLogger) Error(string, ...any) {}
 
 // Reconcile makes the database reflect the current filesystem state.
 // A failed or incomplete scan stops the operation before vanished records are
@@ -75,9 +84,7 @@ func (r *Reconciler) Reconcile() error {
 						return err
 					}
 				}
-				if r.log != nil {
-					r.log.Info("reconciliation relocated missing path", "from", record.Path, "to", newPath)
-				}
+				r.log.Info("reconciliation relocated missing path", "from", record.Path, "to", newPath)
 				continue
 			}
 		}
@@ -85,19 +92,15 @@ func (r *Reconciler) Reconcile() error {
 		if err := r.files.Delete(record.Path); err != nil {
 			return err
 		}
-		if r.log != nil {
-			r.log.Info("reconciliation deleted missing file", "path", record.Path)
-		}
+		r.log.Info("reconciliation deleted missing file", "path", record.Path)
 	}
 
-	if r.log != nil {
-		r.log.Info("filesystem reconciliation complete", "files", len(observed))
-	}
+	r.log.Info("filesystem reconciliation complete", "files", len(observed))
 	return nil
 }
 
-// scan walks every sync root, then ApplyObserved for each file. On walk
-// failure it returns before callers delete vanished rows.
+// scan walks every sync root, then ApplyObserved for each file and directory.
+// On walk failure it returns before callers delete vanished rows.
 func (r *Reconciler) scan() (map[string]struct{}, map[inodeKey]string, error) {
 	observed := make(map[string]struct{})
 	observedInodes := make(map[inodeKey]string)
@@ -111,7 +114,7 @@ func (r *Reconciler) scan() (map[string]struct{}, map[inodeKey]string, error) {
 			if walkErr != nil {
 				return walkErr
 			}
-			if entry.IsDir() || !filepkg.IsValidFile(path) {
+			if !entry.IsDir() && !filepkg.IsValidFile(path) {
 				return nil
 			}
 

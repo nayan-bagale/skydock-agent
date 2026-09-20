@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	constants "github.com/nayan-bagale/skydock-agent/internal"
 	"github.com/nayan-bagale/skydock-agent/internal/database"
 	filepkg "github.com/nayan-bagale/skydock-agent/internal/file"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
@@ -60,10 +59,19 @@ func Run() error {
 	log.Info("database initialized", "path", dbPath)
 
 	fileRepo := repository.NewFileRepository(db)
+	rootRepo := repository.NewSyncRootRepository(db)
+
+	roots, err := rootRepo.ListEnabledPaths()
+	if err != nil {
+		return fmt.Errorf("list sync roots: %w", err)
+	}
+	if len(roots) == 0 {
+		return fmt.Errorf("no enabled sync roots")
+	}
 
 	// Reconcile before starting the watcher so the database has a complete
 	// baseline and events are only responsible for changes after startup.
-	reconcilerService := reconciler.New(constants.Directories, fileRepo, log)
+	reconcilerService := reconciler.New(roots, fileRepo, log)
 	if err := reconcilerService.Reconcile(); err != nil {
 		return fmt.Errorf("initial filesystem reconciliation: %w", err)
 	}
@@ -79,7 +87,7 @@ func Run() error {
 		}
 	}()
 
-	if !attachDirectoriesToWatcher(watch, log) {
+	if !attachDirectoriesToWatcher(watch, roots, log) {
 		return fmt.Errorf("attach directories to watcher")
 	}
 
@@ -119,8 +127,8 @@ func initWatcher(log *logger.Logger, fileRepo *repository.FileRepository) (*watc
 	return watch, nil
 }
 
-func attachDirectoriesToWatcher(watch *watcher.Watcher, log *logger.Logger) bool {
-	dirs, err := filepkg.GetAllDirs(constants.Directories)
+func attachDirectoriesToWatcher(watch *watcher.Watcher, roots []string, log *logger.Logger) bool {
+	dirs, err := filepkg.GetAllDirs(roots)
 	if err != nil {
 		log.Error("failed to get directories", "error", err)
 		return false

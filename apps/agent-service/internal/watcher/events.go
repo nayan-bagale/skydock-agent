@@ -18,7 +18,7 @@ type Event struct {
 }
 
 // HandleEvent dispatches a filesystem event after ignoring chmod, temps, and
-// path-level debounce. Directory creates only attach a new watch.
+// path-level debounce. Directory creates ingest the full subtree.
 func HandleEvent(w *Watcher, event fsnotify.Event) {
 
 	isIgnored := isIgnoredEvent(event, w.log)
@@ -35,14 +35,11 @@ func HandleEvent(w *Watcher, event fsnotify.Event) {
 
 	// Handle file/directory creation
 	if event.Has(fsnotify.Create) {
-		isAttached := attachWatcherToNewDirectory(w, event)
-
-		if isAttached {
-			return
+		if isNewDirectory(event.Name) {
+			ingestDirectoryTree(w, event.Name)
+		} else {
+			HandleCreate(w, event)
 		}
-
-		HandleCreate(w, event)
-
 	}
 
 	// Handle file modifications
@@ -65,9 +62,7 @@ func HandleEvent(w *Watcher, event fsnotify.Event) {
 func isIgnoredEvent(event fsnotify.Event, log *logger.Logger) bool {
 	// Ignore permission change events
 	if event.Has(fsnotify.Chmod) {
-		if log != nil {
-			log.Info("ignoring permission change event", "path", event.Name)
-		}
+		log.Info("ignoring permission change event", "path", event.Name)
 		return true
 	}
 
@@ -93,30 +88,7 @@ func isIgnoredEvent(event fsnotify.Event, log *logger.Logger) bool {
 	return false
 }
 
-// attachWatcherToNewDirectory starts watching a newly created directory and
-// returns true when the event was a directory (so it is not stored as a file).
-func attachWatcherToNewDirectory(w *Watcher, event fsnotify.Event) bool {
-	isDir, err := file.IsDirectory(event.Name)
-	if err != nil {
-		if w.log != nil {
-			w.log.Error("failed to inspect path", "path", event.Name, "error", err)
-		}
-		return false
-	}
-
-	if !isDir {
-		return false
-	}
-
-	if w.log != nil {
-		w.log.Info("add watcher dynamically to new directory", "path", event.Name)
-	}
-	wErr := w.fsWatcher.Add(event.Name)
-	if wErr != nil {
-		if w.log != nil {
-			w.log.Error("failed to add watcher to new directory", "path", event.Name, "error", wErr)
-		}
-		return false
-	}
-	return true
+func isNewDirectory(path string) bool {
+	isDir, err := file.IsDirectory(path)
+	return err == nil && isDir
 }

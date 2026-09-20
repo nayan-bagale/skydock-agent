@@ -92,16 +92,14 @@ func (w *Watcher) expirePending(now time.Time) {
 	for _, pending := range expired {
 		current, err := w.files.GetByInode(pending.device, pending.inode)
 		if err != nil {
-			if w.log != nil {
-				w.log.Error("failed to resolve pending rename", "path", pending.path, "error", err)
-			}
+			w.log.Error("failed to resolve pending rename", "path", pending.path, "error", err)
 			continue
 		}
 		if current != nil && current.Path != pending.path {
 			continue
 		}
 
-		if err := w.files.MarkMissing(pending.path); err != nil && w.log != nil {
+		if err := w.files.MarkMissing(pending.path); err != nil {
 			w.log.Error("failed to mark renamed file missing", "path", pending.path, "error", err)
 		}
 	}

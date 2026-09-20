@@ -15,10 +15,13 @@ func GetFileMetadata(filePath string) (*FileMeta, error) {
 		return nil, fmt.Errorf("stat file: %w", err)
 	}
 
-	checksum, err := Checksum(filePath)
-
-	if err != nil {
-		return nil, err
+	checksum := ""
+	if !info.IsDir() {
+		sum, err := Checksum(filePath)
+		if err != nil {
+			return nil, err
+		}
+		checksum = sum
 	}
 
 	stat, ok := info.Sys().(*syscall.Stat_t)

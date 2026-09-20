@@ -84,9 +84,7 @@ func (w *Watcher) StartWatcher() {
 			if !ok {
 				return
 			}
-			if w.log != nil {
-				w.log.Error("watcher error", "error", err)
-			}
+			w.log.Error("watcher error", "error", err)
 
 		case <-ticker.C:
 			w.expirePending(w.clock())

@@ -22,7 +22,7 @@ func (r *Reconciler) Run(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := r.Reconcile(); err != nil && r.log != nil {
+			if err := r.Reconcile(); err != nil {
 				r.log.Error("filesystem reconciliation failed", "error", err)
 			}
 		case <-ctx.Done():

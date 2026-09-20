@@ -8,9 +8,7 @@ import (
 // HandleCreate records a path that appeared. Same device+inode at a new path
 // is treated as a move, not a new file.
 func HandleCreate(w *Watcher, event fsnotify.Event) {
-	if w.log != nil {
-		w.log.Info("file created", "path", event.Name)
-	}
+	w.log.Info("file created", "path", event.Name)
 
 	if w.files == nil {
 		return
@@ -18,9 +16,7 @@ func HandleCreate(w *Watcher, event fsnotify.Event) {
 
 	meta, err := file.GetFileMetadata(event.Name)
 	if err != nil {
-		if w.log != nil {
-			w.log.Error("failed to load created file metadata", "path", event.Name, "error", err)
-		}
+		w.log.Error("failed to load created file metadata", "path", event.Name, "error", err)
 		return
 	}
 
@@ -30,9 +26,7 @@ func HandleCreate(w *Watcher, event fsnotify.Event) {
 // HandleWrite refreshes metadata for an existing path and sets MODIFIED when
 // the checksum changed.
 func HandleWrite(w *Watcher, event fsnotify.Event) {
-	if w.log != nil {
-		w.log.Info("modified file", "path", event.Name)
-	}
+	w.log.Info("modified file", "path", event.Name)
 
 	if w.files == nil {
 		return
@@ -40,9 +34,7 @@ func HandleWrite(w *Watcher, event fsnotify.Event) {
 
 	meta, err := file.GetFileMetadata(event.Name)
 	if err != nil {
-		if w.log != nil {
-			w.log.Error("failed to load modified file metadata", "path", event.Name, "error", err)
-		}
+		w.log.Error("failed to load modified file metadata", "path", event.Name, "error", err)
 		return
 	}
 
@@ -52,9 +44,7 @@ func HandleWrite(w *Watcher, event fsnotify.Event) {
 // HandleRename treats event.Name as the old path. It does not mark MISSING
 // immediately; Create may still report the new path inside the settle window.
 func HandleRename(w *Watcher, event fsnotify.Event) {
-	if w.log != nil {
-		w.log.Info("renamed file", "path", event.Name)
-	}
+	w.log.Info("renamed file", "path", event.Name)
 
 	if w.files == nil {
 		return
@@ -62,9 +52,7 @@ func HandleRename(w *Watcher, event fsnotify.Event) {
 
 	record, err := w.files.GetByPath(event.Name)
 	if err != nil {
-		if w.log != nil {
-			w.log.Error("failed to load renamed file metadata", "path", event.Name, "error", err)
-		}
+		w.log.Error("failed to load renamed file metadata", "path", event.Name, "error", err)
 		return
 	}
 	if record == nil {
@@ -77,9 +65,7 @@ func HandleRename(w *Watcher, event fsnotify.Event) {
 
 // HandleRemove deletes the local row for a true delete, distinct from rename.
 func HandleRemove(w *Watcher, event fsnotify.Event) {
-	if w.log != nil {
-		w.log.Info("file removed", "path", event.Name)
-	}
+	w.log.Info("file removed", "path", event.Name)
 
 	if w.files == nil {
 		return
@@ -87,7 +73,7 @@ func HandleRemove(w *Watcher, event fsnotify.Event) {
 
 	w.clearPendingForPath(event.Name)
 
-	if err := w.files.Delete(event.Name); err != nil && w.log != nil {
+	if err := w.files.Delete(event.Name); err != nil {
 		w.log.Error("failed to remove file record", "path", event.Name, "error", err)
 	}
 }
@@ -100,9 +86,7 @@ func persistObserved(w *Watcher, meta *file.FileMeta) {
 	}
 
 	if err := w.files.ApplyObserved(meta); err != nil {
-		if w.log != nil {
-			w.log.Error("failed to persist observed file", "path", meta.Path, "error", err)
-		}
+		w.log.Error("failed to persist observed file", "path", meta.Path, "error", err)
 		return
 	}
 
