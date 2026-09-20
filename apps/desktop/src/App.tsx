@@ -1,9 +1,17 @@
-
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { DesktopUiProvider } from './context/DesktopUiContext'
 import Header from './components/Header'
 import MainContent from './components/MainContent'
 import Sidebar from './components/Sidebar'
-function App() {
+import Login from './components/Login'
+
+function AppShell() {
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return <Login />
+  }
+
   return (
     <DesktopUiProvider>
       <main className="grid h-screen w-screen grid-cols-[245px_minmax(0,1fr)] overflow-hidden bg-background text-foreground max-[800px]:grid-cols-1 max-[800px]:overflow-auto">
@@ -14,6 +22,14 @@ function App() {
         </section>
       </main>
     </DesktopUiProvider>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   )
 }
 
