@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     return ipcRenderer.invoke(channel, ...omit)
   },
 
-  // You can expose other APTs you need here.
-  // ...
+    // Add this method to safely retrieve the platform string
+    getOS() {
+      return process.platform // Returns 'win32', 'darwin', or 'linux'
+    }
 })

@@ -1,9 +1,9 @@
 import { app, BrowserWindow } from 'electron'
-import { createRequire } from 'node:module'
+// import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-const require = createRequire(import.meta.url)
+// const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // The built directory structure
@@ -28,7 +28,11 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    width: 1020,
+    height: 720,
+    icon: path.join(process.env.VITE_PUBLIC, 'skydock-logo-resized.png'),
+    maximizable:false,
+    resizable:false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },

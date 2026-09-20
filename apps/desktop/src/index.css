@@ -1,68 +1,95 @@
+@import "tailwindcss";
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-mac-close: oklch(0.66 0.22 27);
+  --color-mac-minimize: oklch(0.82 0.17 82);
+  --color-mac-maximize: oklch(0.7 0.17 145);
+}
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --radius: 0.45rem;
+  --background: oklch(0.977 0.008 282);
+  --foreground: oklch(0.18 0.014 264);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.55 0.238 259);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.008 272);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.945 0.008 275);
+  --muted-foreground: oklch(0.48 0.025 268);
+  --accent: oklch(0.94 0.015 264);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.61 0.23 25);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.91 0.012 270);
+  --input: oklch(0.91 0.012 270);
+  --ring: var(--primary);
+  --sidebar: oklch(0.965 0.007 275);
+  --sidebar-foreground: oklch(0.32 0.025 270);
+  --sidebar-accent: oklch(0.925 0.018 265);
+  --success: oklch(0.5 0.15 150);
+  --success-bg: oklch(0.93 0.06 150);
+  --warning: oklch(0.66 0.17 72);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+    --background: oklch(0.185 0.014 270);
+    --foreground: oklch(0.93 0.008 270);
+    --card: oklch(0.235 0.015 272);
+    --card-foreground: var(--foreground);
+    --popover: var(--card);
+    --popover-foreground: var(--foreground);
+    --primary: oklch(0.7 0.19 259);
+    --primary-foreground: oklch(0.15 0.02 265);
+    --secondary: oklch(0.28 0.016 272);
+    --muted: oklch(0.28 0.015 272);
+    --muted-foreground: oklch(0.7 0.02 268);
+    --accent: oklch(0.3 0.02 266);
+    --destructive: oklch(0.66 0.2 25);
+    --border: oklch(0.33 0.014 270);
+    --input: oklch(0.33 0.014 270);
+    --sidebar: oklch(0.215 0.014 272);
+    --sidebar-foreground: oklch(0.82 0.014 270);
+    --sidebar-accent: oklch(0.3 0.018 266);
+    --success: oklch(0.82 0.15 150);
+    --success-bg: oklch(0.32 0.07 150);
+    --warning: oklch(0.82 0.15 80);
   }
 }
