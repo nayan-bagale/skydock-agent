@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "postinstall": "node scripts/verify-electron.mjs",
-    "desktop:dev": "yarn workspace desktop electron:dev",
+    "agent:dev": "cd apps/agent-service && go run .",
+    "desktop:dev": "yarn workspace desktop dev",
     "desktop:build": "yarn workspace desktop build",
     "desktop:lint": "yarn workspace desktop lint",
     "desktop:typecheck": "yarn workspace desktop typecheck"
