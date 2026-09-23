@@ -1,6 +1,9 @@
-import { ipcRenderer, contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
-// --------- Expose some API to the Renderer process ---------
+import type { Envelope } from './agent-protocol'
+
+const AGENT_EVENT_CHANNEL = 'agent:event'
+
 contextBridge.exposeInMainWorld('ipcRenderer', {
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args
@@ -18,9 +21,28 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
+  getOS() {
+    return process.platform
+  },
+})
 
-    // Add this method to safely retrieve the platform string
-    getOS() {
-      return process.platform // Returns 'win32', 'darwin', or 'linux'
+contextBridge.exposeInMainWorld('agentBus', {
+  on(name: string, listener: (envelope: Envelope) => void) {
+    const wrapped = (_event: Electron.IpcRendererEvent, envelope: Envelope) => {
+      if (envelope.name === name) {
+        listener(envelope)
+      }
     }
+    ipcRenderer.on(AGENT_EVENT_CHANNEL, wrapped)
+    return () => ipcRenderer.off(AGENT_EVENT_CHANNEL, wrapped)
+  },
+  off() {
+    ipcRenderer.removeAllListeners(AGENT_EVENT_CHANNEL)
+  },
+  emit(name: string, data?: unknown, withAck?: boolean) {
+    return ipcRenderer.invoke('agent:emit', name, data, withAck ?? false)
+  },
+  isConnected() {
+    return ipcRenderer.invoke('agent:is-connected') as Promise<boolean>
+  },
 })

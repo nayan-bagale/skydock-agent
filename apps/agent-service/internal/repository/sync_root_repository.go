@@ -16,6 +16,18 @@ func NewSyncRootRepository(db *gorm.DB) *SyncRootRepository {
 	return &SyncRootRepository{db: db}
 }
 
+func (r *SyncRootRepository) ListAll() ([]models.SyncRoot, error) {
+	if err := r.requireDB(); err != nil {
+		return nil, err
+	}
+
+	var roots []models.SyncRoot
+	if err := r.db.Order("path ASC").Find(&roots).Error; err != nil {
+		return nil, fmt.Errorf("list sync roots: %w", err)
+	}
+	return roots, nil
+}
+
 func (r *SyncRootRepository) ListEnabledPaths() ([]string, error) {
 	if err := r.requireDB(); err != nil {
 		return nil, err

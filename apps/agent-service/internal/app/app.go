@@ -13,6 +13,7 @@ import (
 	"github.com/nayan-bagale/skydock-agent/internal/reconciler"
 	"github.com/nayan-bagale/skydock-agent/internal/repository"
 	"github.com/nayan-bagale/skydock-agent/internal/watcher"
+	"github.com/nayan-bagale/skydock-agent/internal/zmq"
 )
 
 const version = "1.0.0"
@@ -94,6 +95,16 @@ func Run() error {
 	go watch.StartWatcher()
 	go reconcilerService.Run(ctx, reconciler.DefaultInterval)
 
+	zmqServer, err := initZmq(ctx, log, rootRepo, fileRepo)
+	if err != nil {
+		return fmt.Errorf("initialize zmq: %w", err)
+	}
+	defer func() {
+		if err := zmqServer.Close(); err != nil {
+			log.Error("failed to close zmq", "error", err)
+		}
+	}()
+
 	log.Info("SkyDock agent started")
 
 	<-ctx.Done()
@@ -125,6 +136,32 @@ func initWatcher(log *logger.Logger, fileRepo *repository.FileRepository) (*watc
 	}
 
 	return watch, nil
+}
+
+func initZmq(ctx context.Context, log *logger.Logger, rootRepo *repository.SyncRootRepository, fileRepo *repository.FileRepository) (*zmq.Server, error) {
+	server, err := zmq.NewServer(zmq.ResolveAddr(), log)
+	if err != nil {
+		log.Error("failed to create zmq server", "error", err)
+		return nil, err
+	}
+
+	deps := zmq.Deps{
+		Log:     log,
+		Version: version,
+		Roots:   rootRepo,
+		Files:   fileRepo,
+	}
+	zmq.Register(server, deps)
+
+	go func() {
+		if err := server.Run(ctx); err != nil && ctx.Err() == nil {
+			log.Error("zmq stopped", "error", err)
+		}
+	}()
+
+	zmq.StartPublishers(ctx, server, deps)
+
+	return server, nil
 }
 
 func attachDirectoriesToWatcher(watch *watcher.Watcher, roots []string, log *logger.Logger) bool {

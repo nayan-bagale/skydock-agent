@@ -1,16 +1,28 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, WifiOff } from "lucide-react";
 
+import { useAgentConnection } from "../hooks/useAgentConnection";
 import StorageTrack from "./ui/StorageTrack";
 
 const HomeOverview = () => {
+  const { connected, agentVersion } = useAgentConnection();
+
   return (
     <section className="mt-[34px] grid grid-cols-2 gap-3.5 max-[800px]:grid-cols-1">
       <div className="rounded-xl border border-border bg-card px-6 py-[22px] shadow-sm">
         <h2 className="mb-3.5 text-base font-semibold">Sync Status</h2>
-        <div className="inline-flex items-center gap-[9px] rounded-full bg-success-bg px-3.5 py-[9px] text-sm font-semibold text-success">
-          <CheckCircle2 className="w-[17px]" /> All files up to date
+        <div
+          className={`inline-flex items-center gap-[9px] rounded-full px-3.5 py-[9px] text-sm font-semibold ${
+            connected ? "bg-success-bg text-success" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {connected ? <CheckCircle2 className="w-[17px]" /> : <WifiOff className="w-[17px]" />}
+          {connected ? "Agent connected" : "Agent disconnected"}
         </div>
-        <p className="mt-3.5 text-[13px] text-muted-foreground">Last synced just now · 5 items synced today</p>
+        <p className="mt-3.5 text-[13px] text-muted-foreground">
+          {connected
+            ? `Sync agent online${agentVersion ? ` · v${agentVersion}` : ""}`
+            : "Start the Go agent and ensure ZMQ is listening on port 17300"}
+        </p>
       </div>
       <div className="rounded-xl border border-border bg-card px-6 py-[22px] shadow-sm">
         <h2 className="mb-3.5 text-base font-semibold">Storage</h2>

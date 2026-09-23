@@ -317,6 +317,24 @@ func (r *FileRepository) ListAll() ([]models.FileRecord, error) {
 	return records, nil
 }
 
+// ListRecent returns the newest file rows by updated_at (then id).
+func (r *FileRepository) ListRecent(limit int) ([]models.FileRecord, error) {
+	if r == nil || r.db == nil {
+		return nil, fmt.Errorf("file repository is not initialized")
+	}
+
+	if limit <= 0 {
+		limit = 50
+	}
+
+	var records []models.FileRecord
+	if err := r.db.Order("updated_at DESC, id DESC").Limit(limit).Find(&records).Error; err != nil {
+		return nil, fmt.Errorf("list recent file records: %w", err)
+	}
+
+	return records, nil
+}
+
 // MarkMissing keeps the record for sync/history purposes while recording that
 // the corresponding local path was not observed during reconciliation.
 func (r *FileRepository) MarkMissing(path string) error {
