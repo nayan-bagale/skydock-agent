@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	constants "github.com/nayan-bagale/skydock-agent/internal"
+	"github.com/nayan-bagale/skydock-agent/internal/config"
 	"github.com/nayan-bagale/skydock-agent/internal/database"
 	filepkg "github.com/nayan-bagale/skydock-agent/internal/file"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
@@ -19,7 +21,15 @@ import (
 const version = "1.0.0"
 
 func Run() error {
-	log := initLogger()
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	log, err := initLogger()
+	if err != nil {
+		return err
+	}
 	// Use one context for all long-running services so shutdown can be coordinated.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -38,9 +48,12 @@ func Run() error {
 		"pid", os.Getpid(),
 	)
 
-	dbPath, err := database.DefaultPath()
-	if err != nil {
-		return fmt.Errorf("resolve database path: %w", err)
+	dbPath := cfg.DBPath
+	if dbPath == "" {
+		dbPath, err = database.DefaultPath()
+		if err != nil {
+			return fmt.Errorf("resolve database path: %w", err)
+		}
 	}
 
 	db, err := database.Open(dbPath)
@@ -53,7 +66,7 @@ func Run() error {
 		}
 	}()
 
-	if err := database.Migrate(db); err != nil {
+	if err := database.Migrate(db, cfg.WatchDirs); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
 
@@ -93,7 +106,7 @@ func Run() error {
 	}
 
 	go watch.StartWatcher()
-	go reconcilerService.Run(ctx, reconciler.DefaultInterval)
+	go reconcilerService.Run(ctx, constants.ReconcileInterval)
 
 	zmqServer, err := initZmq(ctx, log, rootRepo, fileRepo)
 	if err != nil {
@@ -111,21 +124,23 @@ func Run() error {
 	return nil
 }
 
-func initLogger() *logger.Logger {
+func initLogger() (*logger.Logger, error) {
 	logCfg := logger.DefaultConfig()
 
-	logPath, err := logger.DefaultLogPath()
-	if err != nil {
-		panic(err)
+	if logCfg.FilePath == "" && !logCfg.Development {
+		logPath, err := logger.DefaultLogPath()
+		if err != nil {
+			return nil, fmt.Errorf("resolve log path: %w", err)
+		}
+		logCfg.FilePath = logPath
 	}
-	logCfg.FilePath = logPath
 
 	log, err := logger.New(logCfg)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("initialize logger: %w", err)
 	}
 
-	return log
+	return log, nil
 }
 
 func initWatcher(log *logger.Logger, fileRepo *repository.FileRepository) (*watcher.Watcher, error) {

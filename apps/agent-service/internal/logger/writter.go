@@ -6,12 +6,12 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func NewFileWriter(path string) io.Writer {
+func NewFileWriter(cfg Config) io.Writer {
 	return &lumberjack.Logger{
-		Filename:   path,
-		MaxSize:    50,
-		MaxBackups: 10,
-		MaxAge:     30,
-		Compress:   true,
+		Filename:   cfg.FilePath,
+		MaxSize:    cfg.MaxSizeMB,
+		MaxBackups: cfg.MaxBackups,
+		MaxAge:     cfg.MaxAgeDays,
+		Compress:   cfg.Compress,
 	}
 }

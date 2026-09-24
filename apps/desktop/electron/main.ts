@@ -1,3 +1,4 @@
+import './load-env'
 import { app, BrowserWindow } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'

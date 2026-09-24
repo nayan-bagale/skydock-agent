@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	internal "github.com/nayan-bagale/skydock-agent/internal"
+	constants "github.com/nayan-bagale/skydock-agent/internal"
 	file "github.com/nayan-bagale/skydock-agent/internal/file"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
 )
@@ -67,19 +67,18 @@ func isIgnoredEvent(event fsnotify.Event, log *logger.Logger) bool {
 	}
 
 	// Ignore temporary files (like editor backups)
-	if strings.HasSuffix(event.Name, internal.TemporaryFileSuffix) {
+	if constants.TemporaryFileSuffix != "" && strings.HasSuffix(event.Name, constants.TemporaryFileSuffix) {
 		return true
 	}
 
-	// Ignore .DS_Store files
-	if strings.HasSuffix(event.Name, internal.DS_StoreFileName) {
+	if constants.IgnoredName(event.Name) {
 		return true
 	}
 
 	// Debounce events that fire too quickly
 	now := time.Now()
 	if t, exists := lastEvent[event.Name]; exists {
-		if now.Sub(t) < internal.DebounceInterval {
+		if now.Sub(t) < constants.DebounceInterval {
 			return true
 		}
 	}
