@@ -1,10 +1,12 @@
-import { CheckCircle2, WifiOff } from "lucide-react";
+import { CheckCircle2, Loader2, WifiOff } from "lucide-react";
 
 import { useAgentConnection } from "../hooks/useAgentConnection";
+import Button from "./ui/Button";
 import StorageTrack from "./ui/StorageTrack";
 
 const HomeOverview = () => {
-  const { connected, agentVersion } = useAgentConnection();
+  const { connected, status, attempt, agentVersion, retry } = useAgentConnection();
+  const connecting = status === "connecting";
 
   return (
     <section className="mt-[34px] grid grid-cols-2 gap-3.5 max-[800px]:grid-cols-1">
@@ -15,14 +17,27 @@ const HomeOverview = () => {
             connected ? "bg-success-bg text-success" : "bg-muted text-muted-foreground"
           }`}
         >
-          {connected ? <CheckCircle2 className="w-[17px]" /> : <WifiOff className="w-[17px]" />}
-          {connected ? "Agent connected" : "Agent disconnected"}
+          {connecting ? (
+            <Loader2 className="w-[17px] animate-spin" />
+          ) : connected ? (
+            <CheckCircle2 className="w-[17px]" />
+          ) : (
+            <WifiOff className="w-[17px]" />
+          )}
+          {connecting ? "Connecting…" : connected ? "Agent connected" : "Agent disconnected"}
         </div>
         <p className="mt-3.5 text-[13px] text-muted-foreground">
           {connected
             ? `Sync agent online${agentVersion ? ` · v${agentVersion}` : ""}`
-            : "Start the Go agent and ensure ZMQ is listening on ipc:///tmp/skydock-agent.sock"}
+            : connecting
+              ? `Trying to reach the sync agent${attempt > 0 ? ` · attempt ${attempt} of 5` : ""}`
+              : "Start the Go agent and ensure ZMQ is listening on ipc:///tmp/skydock-agent.sock"}
         </p>
+        {status === "failed" && (
+          <Button intent="primary" size="md" className="mt-3.5" onClick={() => void retry()}>
+            Try again
+          </Button>
+        )}
       </div>
       <div className="rounded-xl border border-border bg-card px-6 py-[22px] shadow-sm">
         <h2 className="mb-3.5 text-base font-semibold">Storage</h2>

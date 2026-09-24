@@ -1,4 +1,5 @@
 import type { Envelope } from '../../electron/agent-protocol'
+import type { AgentConnectionStatus } from '../../electron/zmq-event-bus'
 
 export { createQueueLatestHandler, createQueueLatestZmqHandler } from './queue-latest'
 
@@ -8,12 +9,12 @@ export { createQueueLatestHandler, createQueueLatestZmqHandler } from './queue-l
  * React cannot talk to ZMQ itself. The path is:
  *
  *   UI (this class)
- *     → window.agentBus          (preload contextBridge)
+ *     → window.electron.zmq      (preload contextBridge)
  *     → IPC `agent:emit` / `agent:event`
  *     → Electron main ZmqEventBus
  *     → ipc:///tmp/skydock-agent.sock    (Go agent DEALER socket)
  *
- * Use the exported `zmq` singleton. Do not call `window.agentBus` from UI code.
+ * Use the exported `zmq` singleton. Do not call `window.electron.zmq` from UI code.
  * Event names live in `electron/agent-protocol.ts` (keep in sync with Go `internal/zmq/events.go`).
  */
 export class Zmq {
@@ -37,7 +38,7 @@ export class Zmq {
    *                If false, fire-and-forget and resolve with `null`.
    */
   emit(name: string, data?: unknown, withAck = false): Promise<unknown> {
-    return window.agentBus.emit(name, data, withAck)
+    return window.electron.zmq.emit(name, data, withAck)
   }
 
   /**
@@ -47,17 +48,27 @@ export class Zmq {
    * @returns Unsubscribe function — call it from a React effect cleanup.
    */
   on(name: string, listener: (envelope: Envelope) => void): () => void {
-    return window.agentBus.on(name, listener)
+    return window.electron.zmq.on(name, listener)
   }
 
   /** Drop every `agent:event` listener. Prefer the unsubscribe from `on()`. */
   off(): void {
-    window.agentBus.off()
+    window.electron.zmq.off()
   }
 
   /** Whether main currently has a live ZMQ session with the agent. */
   isConnected(): Promise<boolean> {
-    return window.agentBus.isConnected()
+    return window.electron.zmq.isConnected()
+  }
+
+  /** Subscribe to connection attempts. Replays the latest status if one exists. */
+  onStatus(listener: (status: AgentConnectionStatus) => void): () => void {
+    return window.electron.zmq.onStatus(listener)
+  }
+
+  /** Start another 5-attempt connect cycle after the previous one failed. */
+  retry(): Promise<void> {
+    return window.electron.zmq.retry()
   }
 }
 
