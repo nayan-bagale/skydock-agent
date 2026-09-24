@@ -6,7 +6,7 @@ import "os"
 
 const ProtocolVersion = 1
 
-const DefaultZMQAddr = "tcp://127.0.0.1:17300"
+const DefaultZMQAddr = "ipc:///tmp/skydock-agent.sock"
 
 func ResolveAddr() string {
 	if v := os.Getenv("SKYDOCK_AGENT_ZMQ_URL"); v != "" {

@@ -21,7 +21,7 @@ const HomeOverview = () => {
         <p className="mt-3.5 text-[13px] text-muted-foreground">
           {connected
             ? `Sync agent online${agentVersion ? ` · v${agentVersion}` : ""}`
-            : "Start the Go agent and ensure ZMQ is listening on port 17300"}
+            : "Start the Go agent and ensure ZMQ is listening on ipc:///tmp/skydock-agent.sock"}
         </p>
       </div>
       <div className="rounded-xl border border-border bg-card px-6 py-[22px] shadow-sm">

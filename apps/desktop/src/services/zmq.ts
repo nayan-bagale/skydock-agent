@@ -11,7 +11,7 @@ export { createQueueLatestHandler, createQueueLatestZmqHandler } from './queue-l
  *     → window.agentBus          (preload contextBridge)
  *     → IPC `agent:emit` / `agent:event`
  *     → Electron main ZmqEventBus
- *     → tcp://127.0.0.1:17300    (Go agent DEALER socket)
+ *     → ipc:///tmp/skydock-agent.sock    (Go agent DEALER socket)
  *
  * Use the exported `zmq` singleton. Do not call `window.agentBus` from UI code.
  * Event names live in `electron/agent-protocol.ts` (keep in sync with Go `internal/zmq/events.go`).

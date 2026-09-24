@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/go-zeromq/zmq4"
@@ -39,6 +41,21 @@ func (s *Server) On(name string, handler Handler) {
 	s.hMu.Unlock()
 }
 
+func removeStaleIPCSocket(addr string) error {
+	const scheme = "ipc://"
+	if !strings.HasPrefix(addr, scheme) {
+		return nil
+	}
+	path := strings.TrimPrefix(addr, scheme)
+	if path == "" {
+		return nil
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove stale ZMQ socket %s: %w", path, err)
+	}
+	return nil
+}
+
 func (s *Server) Close() error {
 	if s.socket == nil {
 		return nil
@@ -51,6 +68,12 @@ func (s *Server) Close() error {
 func (s *Server) Run(ctx context.Context) error {
 	router := zmq4.NewRouter(ctx)
 	s.socket = router
+
+	if err := removeStaleIPCSocket(s.addr); err != nil {
+		_ = router.Close()
+		s.socket = nil
+		return err
+	}
 
 	if err := router.Listen(s.addr); err != nil {
 		_ = router.Close()

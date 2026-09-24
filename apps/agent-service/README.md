@@ -14,10 +14,10 @@ cd apps/agent-service
 go run .
 ```
 
-The agent binds a ZMQ **ROUTER** on `tcp://127.0.0.1:17300` by default. Override with:
+The agent binds a ZMQ **ROUTER** on `ipc:///tmp/skydock-agent.sock` by default. Override with:
 
 ```bash
-export SKYDOCK_AGENT_ZMQ_URL=tcp://127.0.0.1:17300
+export SKYDOCK_AGENT_ZMQ_URL=ipc:///tmp/skydock-agent.sock
 ```
 
 Logs should include `ZMQ listening` when the ZMQ server is up.
@@ -33,4 +33,4 @@ open -a "DB Browser for SQLite" "$HOME/Library/Application Support/SkyDock/datab
 1. **Agent:** `yarn agent:dev` (from repo root) or `go run .` in this directory.
 2. **Desktop:** `yarn desktop:dev` — Electron connects to the agent; it does not start the agent process.
 
-Both sides should use the same `SKYDOCK_AGENT_ZMQ_URL` if you change the port.
+Both sides should use the same `SKYDOCK_AGENT_ZMQ_URL` if you change the endpoint.
