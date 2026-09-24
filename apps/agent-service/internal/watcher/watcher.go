@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	internal "github.com/nayan-bagale/skydock-agent/internal"
+	constants "github.com/nayan-bagale/skydock-agent/internal"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
 	"github.com/nayan-bagale/skydock-agent/internal/repository"
 )
@@ -34,7 +34,7 @@ func New(log *logger.Logger, files *repository.FileRepository) (*Watcher, error)
 		log:            log,
 		files:          files,
 		pendingRenames: make(map[string]pendingRename),
-		settleInterval: internal.RenameSettleInterval,
+		settleInterval: constants.RenameSettleInterval,
 		now:            time.Now,
 	}, nil
 }
@@ -64,7 +64,7 @@ func (w *Watcher) Close() error {
 func (w *Watcher) StartWatcher() {
 	interval := w.settleInterval
 	if interval <= 0 {
-		interval = internal.RenameSettleInterval
+		interval = constants.RenameSettleInterval
 	}
 
 	ticker := time.NewTicker(interval)

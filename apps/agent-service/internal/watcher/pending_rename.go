@@ -3,7 +3,7 @@ package watcher
 import (
 	"time"
 
-	internal "github.com/nayan-bagale/skydock-agent/internal"
+	constants "github.com/nayan-bagale/skydock-agent/internal"
 )
 
 // Unpaired Rename(old path) waits for a Create with the same inode. If none
@@ -36,7 +36,7 @@ func (w *Watcher) queueRename(path string, device, inode uint64) {
 
 	interval := w.settleInterval
 	if interval <= 0 {
-		interval = internal.RenameSettleInterval
+		interval = constants.RenameSettleInterval
 	}
 
 	w.pendingRenames[path] = pendingRename{

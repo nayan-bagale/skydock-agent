@@ -29,7 +29,8 @@ func New(cfg Config) (*Logger, error) {
 			}
 		}
 
-		fileWriter := NewFileWriter(path)
+		cfg.FilePath = path
+		fileWriter := NewFileWriter(cfg)
 		fileCloser, ok := fileWriter.(io.Closer)
 		if !ok {
 			return nil, fmt.Errorf("file writer does not implement io.Closer")

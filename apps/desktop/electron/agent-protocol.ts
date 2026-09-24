@@ -5,7 +5,7 @@ export const PROTOCOL_VERSION = 1
 export const EventAgentReady = 'agent:ready'
 export const EventAgentHeartbeat = 'agent:heartbeat'
 
-export const DEFAULT_ZMQ_URL = 'tcp://127.0.0.1:17300'
+export const DEFAULT_ZMQ_URL = 'ipc:///tmp/skydock-agent.sock'
 
 export type EnvelopeKind = 'event' | 'ack'
 

@@ -11,14 +11,11 @@ Go sync agent (filesystem watcher, SQLite state, reconciler).
 
 ```bash
 cd apps/agent-service
+cp .env.example .env
 go run .
 ```
 
-The agent binds a ZMQ **ROUTER** on `tcp://127.0.0.1:17300` by default. Override with:
-
-```bash
-export SKYDOCK_AGENT_ZMQ_URL=tcp://127.0.0.1:17300
-```
+Settings live in `.env` (`SKYDOCK_WATCH_DIRS`, `SKYDOCK_DB_PATH`, and `SKYDOCK_AGENT_ZMQ_URL`). See `.env.example`. The agent binds a ZMQ **ROUTER** on `ipc:///tmp/skydock-agent.sock` unless `SKYDOCK_AGENT_ZMQ_URL` is set.
 
 Logs should include `ZMQ listening` when the ZMQ server is up.
 
@@ -33,4 +30,4 @@ open -a "DB Browser for SQLite" "$HOME/Library/Application Support/SkyDock/datab
 1. **Agent:** `yarn agent:dev` (from repo root) or `go run .` in this directory.
 2. **Desktop:** `yarn desktop:dev` — Electron connects to the agent; it does not start the agent process.
 
-Both sides should use the same `SKYDOCK_AGENT_ZMQ_URL` if you change the port.
+Desktop reads `apps/agent-service/.env` for `SKYDOCK_AGENT_ZMQ_URL` so both sides use the same endpoint.

@@ -13,9 +13,9 @@ Run the agent and desktop in **two terminals** (desktop connects only; it does n
 yarn agent:dev
 
 # Terminal 2
-SKYDOCK_AGENT_ZMQ_URL=tcp://127.0.0.1:17300 yarn desktop:dev
+SKYDOCK_AGENT_ZMQ_URL=ipc:///tmp/skydock-agent.sock yarn desktop:dev
 ```
 
-Default ZMQ URL: `tcp://127.0.0.1:17300` on loopback. Set `SKYDOCK_AGENT_ZMQ_URL` on both processes to use another port.
+Default ZMQ URL: `ipc:///tmp/skydock-agent.sock`. Set `SKYDOCK_AGENT_ZMQ_URL` on both processes to use another endpoint.
 
 See [apps/agent-service/README.md](apps/agent-service/README.md) and [apps/desktop/README.md](apps/desktop/README.md) for details.

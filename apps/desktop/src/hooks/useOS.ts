@@ -6,8 +6,8 @@ export function useOS() {
   const [os, setOS] = useState<OSType>('unknown')
 
   useEffect(() => {
-    if (window.ipcRenderer && typeof window.ipcRenderer.getOS === 'function') {
-      const platform = window.ipcRenderer.getOS()
+    if (window.electron && typeof window.electron.getOS === 'function') {
+      const platform = window.electron.getOS()
       
       if (platform === 'darwin') setOS('macOS')
       else if (platform === 'win32') setOS('Windows')

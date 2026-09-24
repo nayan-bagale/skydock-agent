@@ -1,10 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-import type { Envelope } from './agent-protocol'
+import { createZmqBridge } from './zmq-bridge'
 
-const AGENT_EVENT_CHANNEL = 'agent:event'
-
-contextBridge.exposeInMainWorld('ipcRenderer', {
+contextBridge.exposeInMainWorld('electron', {
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args
     return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
@@ -24,25 +22,5 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   getOS() {
     return process.platform
   },
-})
-
-contextBridge.exposeInMainWorld('agentBus', {
-  on(name: string, listener: (envelope: Envelope) => void) {
-    const wrapped = (_event: Electron.IpcRendererEvent, envelope: Envelope) => {
-      if (envelope.name === name) {
-        listener(envelope)
-      }
-    }
-    ipcRenderer.on(AGENT_EVENT_CHANNEL, wrapped)
-    return () => ipcRenderer.off(AGENT_EVENT_CHANNEL, wrapped)
-  },
-  off() {
-    ipcRenderer.removeAllListeners(AGENT_EVENT_CHANNEL)
-  },
-  emit(name: string, data?: unknown, withAck?: boolean) {
-    return ipcRenderer.invoke('agent:emit', name, data, withAck ?? false)
-  },
-  isConnected() {
-    return ipcRenderer.invoke('agent:is-connected') as Promise<boolean>
-  },
+  zmq: createZmqBridge(ipcRenderer),
 })

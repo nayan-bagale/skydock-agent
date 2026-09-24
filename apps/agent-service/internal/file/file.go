@@ -3,10 +3,9 @@ package file
 import (
 	"fmt"
 	"os"
-	"strings"
 	"syscall"
 
-	internal "github.com/nayan-bagale/skydock-agent/internal"
+	constants "github.com/nayan-bagale/skydock-agent/internal"
 )
 
 func GetFileMetadata(filePath string) (*FileMeta, error) {
@@ -48,7 +47,7 @@ func GetFileMetadata(filePath string) (*FileMeta, error) {
 }
 
 func IsValidFile(name string) bool {
-	if strings.HasSuffix(name, internal.DS_StoreFileName) {
+	if constants.IgnoredName(name) {
 		return false
 	}
 	return true

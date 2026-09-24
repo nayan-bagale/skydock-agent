@@ -2,38 +2,17 @@ import { useEffect, useState } from 'react'
 
 import type { AgentReadyPayload } from '../../electron/agent-protocol'
 import { EventAgentHeartbeat, EventAgentReady } from '../../electron/agent-protocol'
+import type { AgentConnectionState } from '../../electron/zmq-event-bus'
 import { EventGetRecentActivity } from '../types/agent-events'
 import { zmq } from '../services/zmq'
 
-/** Agent heartbeat interval is 5s; treat the link as dead if none arrives in this window. */
-const HEARTBEAT_STALE_MS = 12_000
-
-/** Live connection flag for UI. Tracks agent:ready / heartbeat / disconnected over `zmq`. */
+/** Live connection flag for UI. Status comes from the main-process retry cycle. */
 export function useAgentConnection() {
-  const [connected, setConnected] = useState(false)
+  const [status, setStatus] = useState<AgentConnectionState>('connecting')
+  const [attempt, setAttempt] = useState(0)
   const [agentVersion, setAgentVersion] = useState<string | undefined>()
 
   useEffect(() => {
-    let staleTimer: ReturnType<typeof setTimeout> | undefined
-
-    const markDisconnected = () => {
-      setConnected(false)
-      if (staleTimer) {
-        clearTimeout(staleTimer)
-        staleTimer = undefined
-      }
-    }
-
-    const markConnected = () => {
-      setConnected(true)
-      if (staleTimer) {
-        clearTimeout(staleTimer)
-      }
-      staleTimer = setTimeout(() => {
-        setConnected(false)
-      }, HEARTBEAT_STALE_MS)
-    }
-
     const fetchRecentActivity = () => {
       void zmq.emit(EventGetRecentActivity, {}, true).then(
         (payload) => {
@@ -46,7 +25,8 @@ export function useAgentConnection() {
     }
 
     const onReady = zmq.on(EventAgentReady, (envelope) => {
-      markConnected()
+      setStatus('connected')
+      setAttempt(0)
       const data = envelope.data as AgentReadyPayload | undefined
       if (data?.version) {
         setAgentVersion(data.version)
@@ -55,26 +35,27 @@ export function useAgentConnection() {
     })
 
     const onHeartbeat = zmq.on(EventAgentHeartbeat, () => {
-      markConnected()
+      setStatus('connected')
+      setAttempt(0)
     })
 
-    void zmq.isConnected().then((isUp) => {
-      if (isUp) {
-        markConnected()
-        fetchRecentActivity()
-      } else {
-        markDisconnected()
-      }
+    const onStatus = zmq.onStatus((next) => {
+      setStatus(next.state)
+      setAttempt(next.attempt)
     })
 
     return () => {
       onReady()
       onHeartbeat()
-      if (staleTimer) {
-        clearTimeout(staleTimer)
-      }
+      onStatus()
     }
   }, [])
 
-  return { connected, agentVersion }
+  return {
+    connected: status === 'connected',
+    status,
+    attempt,
+    agentVersion,
+    retry: () => zmq.retry(),
+  }
 }

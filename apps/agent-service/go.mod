@@ -5,6 +5,7 @@ go 1.26.5
 require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-zeromq/zmq4 v0.17.0
+	github.com/joho/godotenv v1.5.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2

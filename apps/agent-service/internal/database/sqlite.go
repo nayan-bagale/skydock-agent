@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	constants "github.com/nayan-bagale/skydock-agent/internal"
 	"github.com/nayan-bagale/skydock-agent/internal/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -28,7 +27,7 @@ func Open(path string) (*gorm.DB, error) {
 	return db, nil
 }
 
-func Migrate(db *gorm.DB) error {
+func Migrate(db *gorm.DB, watchDirs []string) error {
 	if db == nil {
 		return fmt.Errorf("database is nil")
 	}
@@ -37,15 +36,15 @@ func Migrate(db *gorm.DB) error {
 		return fmt.Errorf("auto migrate database: %w", err)
 	}
 
-	if err := seedSyncRoots(db); err != nil {
+	if err := seedSyncRoots(db, watchDirs); err != nil {
 		return fmt.Errorf("seed sync roots: %w", err)
 	}
 
 	return nil
 }
 
-func seedSyncRoots(db *gorm.DB) error {
-	for _, path := range constants.Directories {
+func seedSyncRoots(db *gorm.DB, watchDirs []string) error {
+	for _, path := range watchDirs {
 		if path == "" {
 			continue
 		}
