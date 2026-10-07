@@ -8,6 +8,8 @@ import (
 	"syscall"
 
 	constants "github.com/nayan-bagale/skydock-agent/internal"
+	"github.com/nayan-bagale/skydock-agent/internal/api"
+	"github.com/nayan-bagale/skydock-agent/internal/auth"
 	"github.com/nayan-bagale/skydock-agent/internal/config"
 	"github.com/nayan-bagale/skydock-agent/internal/database"
 	filepkg "github.com/nayan-bagale/skydock-agent/internal/file"
@@ -47,6 +49,12 @@ func Run() error {
 		"version", version,
 		"pid", os.Getpid(),
 	)
+
+	apiClient, err := api.New(cfg.APIBaseURL, cfg.APITimeout)
+	if err != nil {
+		return fmt.Errorf("initialize api client: %w", err)
+	}
+	log.Info("api client ready", "base_url", apiClient.BaseURL())
 
 	dbPath := cfg.DBPath
 	if dbPath == "" {
@@ -108,7 +116,7 @@ func Run() error {
 	go watch.StartWatcher()
 	go reconcilerService.Run(ctx, constants.ReconcileInterval)
 
-	zmqServer, err := initZmq(ctx, log, rootRepo, fileRepo)
+	zmqServer, err := initZmq(ctx, log, cfg, apiClient, rootRepo, fileRepo)
 	if err != nil {
 		return fmt.Errorf("initialize zmq: %w", err)
 	}
@@ -153,18 +161,34 @@ func initWatcher(log *logger.Logger, fileRepo *repository.FileRepository) (*watc
 	return watch, nil
 }
 
-func initZmq(ctx context.Context, log *logger.Logger, rootRepo *repository.SyncRootRepository, fileRepo *repository.FileRepository) (*zmq.Server, error) {
+func initZmq(
+	ctx context.Context,
+	log *logger.Logger,
+	cfg config.Config,
+	apiClient *api.Client,
+	rootRepo *repository.SyncRootRepository,
+	fileRepo *repository.FileRepository,
+) (*zmq.Server, error) {
 	server, err := zmq.NewServer(zmq.ResolveAddr(), log)
 	if err != nil {
 		log.Error("failed to create zmq server", "error", err)
 		return nil, err
 	}
 
+	emitAuth := zmq.NewAuthChangeEmitter(server)
+	authSession := auth.New(
+		apiClient,
+		cfg.WebOrigin,
+		auth.NewKeyStore(),
+		func(authenticated bool, accessToken string) { emitAuth(authenticated, accessToken) },
+	)
+
 	deps := zmq.Deps{
 		Log:     log,
 		Version: version,
 		Roots:   rootRepo,
 		Files:   fileRepo,
+		Auth:    authSession,
 	}
 	zmq.Register(server, deps)
 
@@ -175,6 +199,9 @@ func initZmq(ctx context.Context, log *logger.Logger, rootRepo *repository.SyncR
 	}()
 
 	zmq.StartPublishers(ctx, server, deps)
+
+	_ = authSession.Restore(ctx)
+	go authSession.RunKeepalive(ctx)
 
 	return server, nil
 }

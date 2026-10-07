@@ -11,6 +11,7 @@ interface ElectronBridge {
   send: import('electron').IpcRenderer['send']
   invoke: import('electron').IpcRenderer['invoke']
   getOS: () => NodeJS.Platform
+  openExternal: (url: string) => Promise<void>
   zmq: ZmqBridge
 }
 

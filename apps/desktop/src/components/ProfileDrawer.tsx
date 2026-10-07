@@ -2,6 +2,7 @@ import { LogOut, UserRound } from "lucide-react";
 
 import StorageTrack from "./ui/StorageTrack";
 import { useAuth } from "../context/AuthContext";
+import { changeBytes, getStorageUsage } from "../utils/changeBytes";
 
 type ProfileDrawerProps = {
   onClose: () => void;
@@ -9,6 +10,10 @@ type ProfileDrawerProps = {
 
 const ProfileDrawer = ({ onClose }: ProfileDrawerProps) => {
   const { logout, user } = useAuth();
+  const storageLimit = user?.plan.storageLimit ?? 0;
+  const usedStorage = user?.usedStorage ?? 0;
+  const { usedPercentage } = getStorageUsage(storageLimit, usedStorage);
+
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
@@ -33,10 +38,12 @@ const ProfileDrawer = ({ onClose }: ProfileDrawerProps) => {
           <div className="flex items-baseline justify-between text-xs text-muted-foreground">
             <span>Storage</span>
             <strong className="text-[13px] font-bold text-foreground">
-              45.2 GB / 100 GB
+              {user
+                ? `${changeBytes(usedStorage)} of ${changeBytes(storageLimit)}`
+                : "—"}
             </strong>
           </div>
-          <StorageTrack className="mt-2.5" />
+          <StorageTrack className="mt-2.5" usedPercentage={usedPercentage} />
           <button
             className="mt-3 w-full rounded-[9px] bg-primary px-3 py-[9px] text-[13px] font-semibold text-primary-foreground hover:bg-primary/90"
             onClick={onClose}

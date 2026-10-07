@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { useGetUserInfo } from './hooks/useGetUserInfo'
 import { DesktopUiProvider } from './context/DesktopUiContext'
 import Header from './components/Header'
 import MainContent from './components/MainContent'
@@ -6,7 +7,12 @@ import Sidebar from './components/Sidebar'
 import Login from './components/Login'
 
 function AppShell() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
+  useGetUserInfo()
+
+  if (isLoading) {
+    return null
+  }
 
   if (!isAuthenticated) {
     return <Login />

@@ -2,20 +2,30 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
-const DefaultZMQURL = "ipc:///tmp/skydock-agent.sock"
+const (
+	DefaultZMQURL     = "ipc:///tmp/skydock-agent.sock"
+	DefaultAPIURL     = "http://localhost:3000/api/v1"
+	DefaultWebURL     = "http://localhost:5173"
+	DefaultAPITimeout = 30 * time.Second
+)
 
 // Config is process configuration loaded from the environment and .env.
 type Config struct {
-	WatchDirs []string
-	DBPath    string
-	ZMQURL    string
+	WatchDirs  []string
+	DBPath     string
+	ZMQURL     string
+	APIBaseURL string
+	WebOrigin  string
+	APITimeout time.Duration
 }
 
 var current Config
@@ -61,11 +71,69 @@ func fromEnv() (Config, error) {
 		return Config{}, err
 	}
 
+	apiBaseURL, err := apiBaseURL()
+	if err != nil {
+		return Config{}, err
+	}
+
+	apiTimeout, err := apiTimeout()
+	if err != nil {
+		return Config{}, err
+	}
+
+	webOrigin, err := webOriginURL()
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
-		WatchDirs: watchDirs,
-		DBPath:    strings.TrimSpace(os.Getenv("SKYDOCK_DB_PATH")),
-		ZMQURL:    getenv("SKYDOCK_AGENT_ZMQ_URL", DefaultZMQURL),
+		WatchDirs:  watchDirs,
+		DBPath:     strings.TrimSpace(os.Getenv("SKYDOCK_DB_PATH")),
+		ZMQURL:     getenv("SKYDOCK_AGENT_ZMQ_URL", DefaultZMQURL),
+		APIBaseURL: apiBaseURL,
+		WebOrigin:  webOrigin,
+		APITimeout: apiTimeout,
 	}, nil
+}
+
+func webOriginURL() (string, error) {
+	raw := getenv("SKYDOCK_WEB_URL", DefaultWebURL)
+	if raw == "" {
+		return "", fmt.Errorf("SKYDOCK_WEB_URL is required")
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return "", fmt.Errorf("SKYDOCK_WEB_URL is invalid: %q", raw)
+	}
+	return strings.TrimRight(raw, "/"), nil
+}
+
+func apiBaseURL() (string, error) {
+	raw := getenv("SKYDOCK_API_URL", DefaultAPIURL)
+	if raw == "" {
+		return "", fmt.Errorf("SKYDOCK_API_URL is required")
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return "", fmt.Errorf("SKYDOCK_API_URL is invalid: %q", raw)
+	}
+
+	return raw, nil
+}
+
+func apiTimeout() (time.Duration, error) {
+	raw := strings.TrimSpace(os.Getenv("SKYDOCK_API_TIMEOUT"))
+	if raw == "" {
+		return DefaultAPITimeout, nil
+	}
+
+	timeout, err := time.ParseDuration(raw)
+	if err != nil || timeout <= 0 {
+		return 0, fmt.Errorf("SKYDOCK_API_TIMEOUT is invalid: %q", raw)
+	}
+
+	return timeout, nil
 }
 
 func watchDirs() ([]string, error) {
