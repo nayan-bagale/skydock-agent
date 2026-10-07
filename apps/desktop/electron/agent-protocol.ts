@@ -5,6 +5,12 @@ export const PROTOCOL_VERSION = 1
 export const EventAgentReady = 'agent:ready'
 export const EventAgentHeartbeat = 'agent:heartbeat'
 
+export const EventAuthStart = 'AUTH_START'
+export const EventAuthCallback = 'AUTH_CALLBACK'
+export const EventAuthSession = 'AUTH_SESSION'
+export const EventAuthLogout = 'AUTH_LOGOUT'
+export const EventAuthChanged = 'auth:changed'
+
 export const DEFAULT_ZMQ_URL = 'ipc:///tmp/skydock-agent.sock'
 
 export type EnvelopeKind = 'event' | 'ack'

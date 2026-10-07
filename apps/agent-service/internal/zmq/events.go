@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/nayan-bagale/skydock-agent/internal/auth"
 	"github.com/nayan-bagale/skydock-agent/internal/logger"
 	"github.com/nayan-bagale/skydock-agent/internal/repository"
 )
@@ -25,6 +26,7 @@ type Deps struct {
 	Version string
 	Roots   *repository.SyncRootRepository
 	Files   *repository.FileRepository
+	Auth    *auth.Session
 }
 
 // Register wires inbound event names to handlers.
@@ -37,6 +39,9 @@ func Register(s *Server, d Deps) {
 	s.On(EventAgentReady, handleAgentReady(d))
 	s.On(EventAgentError, handleAgentError(d))
 	s.On(EventGetRecentActivity, handleGetRecentActivity(d))
+	if d.Auth != nil {
+		registerAuthHandlers(s, d.Auth)
+	}
 }
 
 func handleAgentReady(d Deps) Handler {

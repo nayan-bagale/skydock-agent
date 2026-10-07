@@ -1,11 +1,17 @@
 import { CheckCircle2, Loader2, WifiOff } from "lucide-react";
 
+import { useAuth } from "../context/AuthContext";
 import { useAgentConnection } from "../hooks/useAgentConnection";
+import { changeBytes, getStorageUsage } from "../utils/changeBytes";
 import Button from "./ui/Button";
 import StorageTrack from "./ui/StorageTrack";
 
 const HomeOverview = () => {
   const { connected, status, attempt, agentVersion, retry } = useAgentConnection();
+  const { user } = useAuth();
+  const storageLimit = user?.plan.storageLimit ?? 0;
+  const usedStorage = user?.usedStorage ?? 0;
+  const { usedPercentage } = getStorageUsage(storageLimit, usedStorage);
   const connecting = status === "connecting";
 
   return (
@@ -42,10 +48,15 @@ const HomeOverview = () => {
       <div className="rounded-xl border border-border bg-card px-6 py-[22px] shadow-sm">
         <h2 className="mb-3.5 text-base font-semibold">Storage</h2>
         <strong className="block text-[26px] font-bold">
-          45.2 GB <span className="text-sm font-normal text-muted-foreground">/ 100 GB</span>
+          {user ? changeBytes(usedStorage) : "—"}{" "}
+          <span className="text-sm font-normal text-muted-foreground">
+            / {user ? changeBytes(storageLimit) : "—"}
+          </span>
         </strong>
-        <StorageTrack />
-        <p className="mt-3.5 text-[13px] text-muted-foreground">45.2% of your plan used</p>
+        <StorageTrack usedPercentage={usedPercentage} />
+        <p className="mt-3.5 text-[13px] text-muted-foreground">
+          {user ? `${usedPercentage}% of your plan used` : "Loading storage…"}
+        </p>
       </div>
     </section>
   );

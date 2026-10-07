@@ -4,6 +4,11 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import { registerAgentIpc } from './agent-ipc'
+import {
+  handleArgvForCallback,
+  registerSkydockProtocol,
+  setupAuthCallbackDelivery,
+} from './skydock-auth'
 import { agentBus } from './zmq-event-bus'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -15,6 +20,11 @@ export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) {
+  app.quit()
+}
 
 let win: BrowserWindow | null
 
@@ -58,14 +68,30 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(async () => {
-  createWindow()
-  registerAgentIpc(agentBus, getMainWindow)
-  void agentBus.connect().catch((err) => {
-    console.error('[agent-bus] initial connect failed', err)
+if (gotSingleInstanceLock) {
+  app.on('second-instance', (_event, argv) => {
+    if (win) {
+      if (win.isMinimized()) {
+        win.restore()
+      }
+      win.focus()
+    }
+    handleArgvForCallback(agentBus, argv)
   })
-})
 
-app.on('before-quit', () => {
-  void agentBus.disconnect()
-})
+  registerSkydockProtocol(agentBus)
+  setupAuthCallbackDelivery(agentBus)
+
+  app.whenReady().then(async () => {
+    createWindow()
+    registerAgentIpc(agentBus, getMainWindow)
+    handleArgvForCallback(agentBus, process.argv)
+    void agentBus.connect().catch((err) => {
+      console.error('[agent-bus] initial connect failed', err)
+    })
+  })
+
+  app.on('before-quit', () => {
+    void agentBus.disconnect()
+  })
+}

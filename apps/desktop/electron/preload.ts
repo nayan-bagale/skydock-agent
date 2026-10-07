@@ -22,5 +22,8 @@ contextBridge.exposeInMainWorld('electron', {
   getOS() {
     return process.platform
   },
+  openExternal(url: string) {
+    return ipcRenderer.invoke('shell:open-external', url) as Promise<void>
+  },
   zmq: createZmqBridge(ipcRenderer),
 })

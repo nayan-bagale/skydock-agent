@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron'
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 
 import type { ZmqEventBus } from './zmq-event-bus'
 
@@ -28,4 +28,17 @@ export function registerAgentIpc(
   ipcMain.handle('agent:is-connected', () => bus.isConnected())
   ipcMain.handle('agent:get-status', () => bus.getStatus())
   ipcMain.handle('agent:retry', () => bus.retryConnection())
+
+  ipcMain.handle('shell:open-external', async (_event, url: string) => {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      throw new Error('invalid url')
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('invalid url')
+    }
+    await shell.openExternal(url)
+  })
 }
