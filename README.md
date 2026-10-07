@@ -19,3 +19,5 @@ SKYDOCK_AGENT_ZMQ_URL=ipc:///tmp/skydock-agent.sock yarn desktop:dev
 Default ZMQ URL: `ipc:///tmp/skydock-agent.sock`. Set `SKYDOCK_AGENT_ZMQ_URL` on both processes to use another endpoint.
 
 See [apps/agent-service/README.md](apps/agent-service/README.md) and [apps/desktop/README.md](apps/desktop/README.md) for details.
+
+Desktop sign-in (PKCE, `skydock://callback`, keychain) is described in [docs/pkce.md](docs/pkce.md).
